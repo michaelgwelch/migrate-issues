@@ -1,0 +1,27 @@
+{
+  "name": "migratepulls",
+  "version": "0.0.1",
+  "description": "Migrates all pull requests from one repository to another.",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/github.com/migratepulls"
+  },
+  "keywords": [
+    "pull",
+    "request"
+  ],
+  "author": "Michael Welch",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/github.com/migratepulls/issues"
+  },
+  "homepage": "https://github.com/github.com/migratepulls",
+  "dependencies": {
+    "node-git": "0.0.0",
+    "octonode": "^0.6.9"
+  }
+}
