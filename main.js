@@ -1,5 +1,5 @@
 var Migrate = require('./migrate');
-
+var async = require('async');
 var source = {
 	token: "d145f3822bd12ee483e241b2e6cefefe20d5c791",
 	repo: "michaelgwelch/test",
@@ -55,12 +55,32 @@ migrate.getIssueList(function(issues) {
 			}
 		}
 
-		for(i = 1; i < allInfo.length; i++) {
-			var info = allInfo[i];
-			migrateInfo(info, function() {
-				console.log("migrated " + info.number);
-			});
-		}
+		console.dir(allInfo);
+
+
+		async.eachSeries(allInfo, function(issue, callback) {
+			if (issue) {
+				
+				migrateInfo(issue, callback);
+			} else { 
+				callback(); 
+			}
+		}, function(err) {
+			console.log('async error: ' + err);
+		});
+
+		// migrateInfo(allInfo[1], function(issue) {
+		// 	var nextIssue = allInfo[issue.number + 1];
+		// 	if (nextIssue) {
+
+		// 	}
+		// }
+		// for(i = 1; i < allInfo.length; i++) {
+		// 	var info = allInfo[i];
+		// 	migrateInfo(info, function() {
+		// 		console.log("migrated " + info.number);
+		// 	});
+		// }
 
 	}); 
 });

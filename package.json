@@ -21,6 +21,7 @@
   },
   "homepage": "https://github.com/github.com/migratepulls",
   "dependencies": {
+    "async": "^0.9.0",
     "lodash": "^2.4.1",
     "node-git": "0.0.0",
     "octonode": "^0.6.9",
