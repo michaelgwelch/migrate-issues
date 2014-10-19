@@ -1,5 +1,10 @@
 var Migrate = require('./migrate');
 var async = require('async');
+var child = require('child_proxy').exec;
+
+
+var deleteAccessToken = "21c5ba2df7d29aa84ed9e959588de9dc5e68269b"
+
 var source = {
 	token: "d145f3822bd12ee483e241b2e6cefefe20d5c791",
 	repo: "michaelgwelch/test",
@@ -9,6 +14,14 @@ var dest = {
 	token: "d145f3822bd12ee483e241b2e6cefefe20d5c791",
 	repo: "michaelgwelch/test2"
 };
+
+// delete the dest repo (if it exists)
+// Create the dest repo (if it doesn't)
+// clone the source repo --mirror
+// use sed or awk to update pull to pr in packed-refs
+// push --mirror to dest repo
+
+// then start the migration of issues and pulls
 
 var migrate = new Migrate(source, dest);
 
@@ -69,18 +82,6 @@ migrate.getIssueList(function(issues) {
 			console.log('async error: ' + err);
 		});
 
-		// migrateInfo(allInfo[1], function(issue) {
-		// 	var nextIssue = allInfo[issue.number + 1];
-		// 	if (nextIssue) {
-
-		// 	}
-		// }
-		// for(i = 1; i < allInfo.length; i++) {
-		// 	var info = allInfo[i];
-		// 	migrateInfo(info, function() {
-		// 		console.log("migrated " + info.number);
-		// 	});
-		// }
 
 	}); 
 });

@@ -129,7 +129,7 @@
 							})
 							.send({
 								'title':pull.title,
-								'body':pull.body,
+								'body':pull.body + suffix(pull),
 								'head':'pr/' + pull.number + '/head',
 								'base':'pr' + pull.number + 'base'
 							})
