@@ -56,6 +56,10 @@
 			getList('pulls/comments', callback);
 		};
 
+		this.getIssueCommentList = function(callback) {
+			getList('issues/comments', callback);
+		}
+
 		var suffix = function suffix(issue) {
 			var creationMoment = moment(issue.created_at);
 			var creation = creationMoment.fromNow() + ' (' + creationMoment.format('MMMM Do YYYY, h:mm:ss a') + ')';
@@ -66,10 +70,14 @@
 				closing = closingMoment.fromNow() + ' (' + closingMoment.format('MMMM Do YYYY, h:mm:ss a') + ')';
 			}
 
-			return '\r\n\r\n*GitHub Import*\r\n' +
+			var result = '\r\n\r\n*GitHub Import*\r\n' +
 					'**Author:** ' + issue.user.login + '\r\n' +
-					'**Created:** ' + creation + '\r\n' +
-					'**Closed:** ' + closing + '\r\n';
+					'**Created:** ' + creation + '\r\n';
+
+			if (closing !== '') {
+				result = result + '**Closed:** ' + closing + '\r\n';
+			}
+			return result;
 					// '| created by | create date | close date |\r\n' +
 			  //      	'|------------|-------------|------------|\r\n' +
 			  //      	'| ' + issue.user.login + ' | ' + issue.created_at + ' | ' + issue.closed_at + ' |';
@@ -186,6 +194,30 @@
 					}
 					callback();
 				})
+		};
+
+		this.createIssueComment = function(issueComment, callback) {
+			var issueNumber = issueComment.issue_url.split('/').pop();
+			var url = destApiUrl + '/repos/' + destRepo + '/issues/' + issueNumber + '/comments';
+			var request = rest.post(url)
+				.type('json')
+				.headers({
+					'Authorization': 'token ' + source.token,
+					'user-agent': 'node.js'						
+				})
+				.send({
+					'body':issueComment.body + suffix(issueComment),
+				})
+				.end(function(response) {
+					if (response.error) {
+						console.log(response.error);
+					}
+					else {
+						console.log("Created comment " + issueComment.body);
+						console.log(response.body);
+					}
+					callback();
+				})			
 		};
 	};
 
