@@ -40,7 +40,8 @@ migrate.getIssueList(function(issues) {
 		}
 
 		var migratePull = function migratePull(pull, callback) {
-			migrateIssue(pull, callback);
+			//migrateIssue(pull, callback);
+			migrate.createPull(pull, callback);
 		}
 
 		var migrateIssue = function migaretIssue(issue, callback) {
@@ -60,7 +61,6 @@ migrate.getIssueList(function(issues) {
 
 		async.eachSeries(allInfo, function(issue, callback) {
 			if (issue) {
-				
 				migrateInfo(issue, callback);
 			} else { 
 				callback(); 

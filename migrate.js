@@ -2,12 +2,12 @@
 	'use strict';
 
 	var MigrationClient = function(source, dest) {
-		var async = require('async');
+
 		var rest = require('unirest');
-		var sourceUrl = (source.options && source.options.url) || "https://api.github.com";
+		var sourceApiUrl = (source.options && source.options.url) || "https://api.github.com";
 		var sourceRepo = source.repo;
 
-		var destUrl = (dest.option && dest.options.url) || "https://api.github.com";
+		var destApiUrl = (dest.option && dest.options.url) || "https://api.github.com";
 		var destRepo = dest.repo;
 
 		var _ = require('lodash');
@@ -17,7 +17,7 @@
 
 			var getPage = function(pageNumber) {
 
-				var request = rest.get(sourceUrl + '/repos/' + sourceRepo + '/' + listId + 
+				var request = rest.get(sourceApiUrl + '/repos/' + sourceRepo + '/' + listId + 
 					'?page=' + pageNumber + '&state=all');
 				request.headers({
 					'Authorization': 'token ' + source.token,
@@ -63,7 +63,7 @@
 		}
 
 		var updateIssue = function(issueUpdate, callback) {
-			var url = destUrl + '/repos/' + destRepo + '/issues/' + issueUpdate.number;
+			var url = destApiUrl + '/repos/' + destRepo + '/issues/' + issueUpdate.number;
 			var request = rest.patch(url)
 				.type('json')
 				.headers({
@@ -79,7 +79,7 @@
 		}
 
 		this.createIssue = function(issue, callback) {
-			var url = destUrl + '/repos/' + destRepo + '/issues';
+			var url = destApiUrl + '/repos/' + destRepo + '/issues';
 			var request = rest.post(url)
 				.type('json')
 				.headers({
@@ -97,6 +97,52 @@
 						callback();
 					}
 				});
+
+		};
+
+		this.createPull = function(pull, callback) {
+
+			// task #1: push the base sha up to a branch
+			var url = destApiUrl + '/repos/' + destRepo + '/git/refs';
+			var request = rest.post(url)
+				.type('json')
+				.headers({
+					'Authorization': 'token ' + source.token,
+					'user-agent': 'node.js'					
+				})
+				.send({
+					'ref':'refs/heads/pr' + pull.number + 'base',
+					'sha':pull.base.sha
+				})
+				.end(function(response) {
+					if (response.error) {
+						console.dir(response.error);
+						callback();
+					} else {
+						// task #2: create the pull
+						url = destApiUrl + '/repos/' + destRepo + '/pulls';
+						var request = rest.post(url)
+							.type('json')
+							.headers({
+								'Authorization': 'token ' + source.token,
+								'user-agent': 'node.js'					
+							})
+							.send({
+								'title':pull.title,
+								'body':pull.body,
+								'head':'pr/' + pull.number + '/head',
+								'base':'pr' + pull.number + 'base'
+							})
+							.end(function(response){
+								if (response.error) console.log(response.error);
+								callback();
+							});			
+					}
+				});
+
+
+
+			// task #3: update the pull
 
 		};
 	};
