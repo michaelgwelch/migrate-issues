@@ -3,7 +3,7 @@ var async = require('async');
 var child = require('child_process').exec;
 
 
-var deleteAccessToken = "21c5ba2df7d29aa84ed9e959588de9dc5e68269b"
+var deleteAccessToken = "21c5ba2df7d29aa84ed9e959588de9dc5e68269b";
 
 var source = {
 	token: "d145f3822bd12ee483e241b2e6cefefe20d5c791",
@@ -32,54 +32,76 @@ var allInfo = [];
 
 migrate.getIssueList(function(issues) {
 	migrate.getPullList(function(pulls) {
+		migrate.getPullCommentList(function(pullComments) {
 
-		var i;
-		for(i = 0; i < issues.length; i++) {
+			var i, issue;
+			for(i = 0; i < issues.length; i++) {
 
-			var issue = issues[i];
-			var issueNumber = issue.number;
+				issue = issues[i];
+				var issueNumber = issue.number;
 
-			allInfo[issueNumber] = issue;
+				allInfo[issueNumber] = issue;
 
-		}
-
-		for (i = 0; i < pulls.length; i++) {
-			var pull = pulls[i];
-			var pullNumber = pull.number;
-
-			var issue = allInfo[pullNumber];
-			issue.base = pull.base;
-			issue.head = pull.head;
-		}
-
-		var migratePull = function migratePull(pull, callback) {
-			//migrateIssue(pull, callback);
-			migrate.createPull(pull, callback);
-		}
-
-		var migrateIssue = function migaretIssue(issue, callback) {
-			migrate.createIssue(issue, callback);
-		}
-
-		var migrateInfo = function migrateInfo(info, callback) {
-			if (info.base) {
-				migratePull(info, callback);
-			} else {
-				migrateIssue(info, callback);
 			}
-		}
 
-		console.dir(allInfo);
+			for (i = 0; i < pulls.length; i++) {
+				var pull = pulls[i];
+				var pullNumber = pull.number;
 
-
-		async.eachSeries(allInfo, function(issue, callback) {
-			if (issue) {
-				migrateInfo(issue, callback);
-			} else { 
-				callback(); 
+				issue = allInfo[pullNumber];
+				issue.base = pull.base;
+				issue.head = pull.head;
 			}
-		}, function(err) {
-			console.log('async error: ' + err);
+
+
+			var migratePull = function migratePull(pull, callback) {
+				//migrateIssue(pull, callback);
+				migrate.createPull(pull, callback);
+			};
+
+			var migrateIssue = function migaretIssue(issue, callback) {
+				migrate.createIssue(issue, callback);
+			};
+
+			var migrateInfo = function migrateInfo(info, callback) {
+				if (info.base) {
+					migratePull(info, callback);
+				} else {
+					migrateIssue(info, callback);
+				}
+			};
+
+			//console.dir(allInfo);
+			var migratePullComments = function() {
+				async.eachSeries(pullComments, function(pullComment, callback) {
+					if (pullComment) {
+						migrate.createPullComment(pullComment, callback);
+					} else {
+						callback();
+					}
+				}, function(err) {
+					console.log('async error 2:' + err);
+				});
+			}
+
+			async.eachSeries(allInfo, function(issue, callback) {
+				if (issue) {
+					migrateInfo(issue, callback);
+				} else { 
+					callback(); 
+				}
+			}, function(err) {
+				if (err) {
+					console.log('async error: ' + err);
+				} else {
+					migratePullComments();
+				}
+			});
+
+
+
+
+
 		});
 
 

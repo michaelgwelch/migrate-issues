@@ -52,6 +52,10 @@
 			getList('issues', callback);
 		};
 
+		this.getPullCommentList = function(callback) {
+			getList('pulls/comments', callback);
+		};
+
 		var suffix = function suffix(issue) {
 			var creationMoment = moment(issue.created_at);
 			var creation = creationMoment.fromNow() + ' (' + creationMoment.format('MMMM Do YYYY, h:mm:ss a') + ')';
@@ -145,15 +149,43 @@
 							})
 							.end(function(response){
 								if (response.error) console.log(response.error);
-								callback();
+								else if (pull.state === 'closed') {
+									updateIssue(pull, callback);
+								} else {
+									callback();
+								}
 							});			
 					}
 				});
 
+		};
 
 
-			// task #3: update the pull
-
+		this.createPullComment = function(pullComment, callback) {
+			var pullNumber = pullComment.pull_request_url.split('/').pop();
+			var url = destApiUrl + '/repos/' + destRepo + '/pulls/' + pullNumber + '/comments';
+			var request = rest.post(url)
+				.type('json')
+				.headers({
+					'Authorization': 'token ' + source.token,
+					'user-agent': 'node.js'						
+				})
+				.send({
+					'body':pullComment.body + suffix(pullComment),
+					'commit_id':pullComment['original_commit_id'],
+					'path':pullComment.path,
+					'position':pullComment['original_position']
+				})
+				.end(function(response) {
+					if (response.error) {
+						console.log(response.error);
+					}
+					else {
+						console.log("Created comment " + pullComment.body);
+						console.log(response.body);
+					}
+					callback();
+				})
 		};
 	};
 
