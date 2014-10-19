@@ -1,6 +1,6 @@
 var Migrate = require('./migrate');
 var async = require('async');
-var child = require('child_proxy').exec;
+var child = require('child_process').exec;
 
 
 var deleteAccessToken = "21c5ba2df7d29aa84ed9e959588de9dc5e68269b"
