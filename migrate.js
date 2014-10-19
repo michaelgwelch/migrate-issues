@@ -3,6 +3,7 @@
 
 	var MigrationClient = function(source, dest) {
 
+		var moment = require('moment');
 		var rest = require('unirest');
 		var sourceApiUrl = (source.options && source.options.url) || "https://api.github.com";
 		var sourceRepo = source.repo;
@@ -52,10 +53,19 @@
 		};
 
 		var suffix = function suffix(issue) {
+			var creationMoment = moment(issue.created_at);
+			var creation = creationMoment.fromNow() + ' (' + creationMoment.format('MMMM Do YYYY, h:mm:ss a') + ')';
+			
+			var closing = "";
+			if (issue.closed_at) {
+				var closingMoment = moment(issue.closed_at);
+				closing = closingMoment.fromNow() + ' (' + closingMoment.format('MMMM Do YYYY, h:mm:ss a') + ')';
+			}
+
 			return '\r\n\r\n*GitHub Import*\r\n' +
 					'**Author:** ' + issue.user.login + '\r\n' +
-					'**Created:** ' + issue.created_at + '\r\n' +
-					'**Closed:** ' + issue.closed_at + '\r\n';
+					'**Created:** ' + creation + '\r\n' +
+					'**Closed:** ' + closing + '\r\n';
 					// '| created by | create date | close date |\r\n' +
 			  //      	'|------------|-------------|------------|\r\n' +
 			  //      	'| ' + issue.user.login + ' | ' + issue.created_at + ' | ' + issue.closed_at + ' |';
