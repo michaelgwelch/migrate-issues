@@ -28,9 +28,9 @@
 				request.end(function(response) {
 					if (response.error) {
 						console.dir(response);
-						callback([]);
+						callback(response.error, []);
 					} else if (response.body.length === 0) {
-						callback(list);
+						callback(null, list);
 					} else {
 						list = list.concat(response.body);
 						getPage(pageNumber + 1);
@@ -58,6 +58,10 @@
 
 		this.getIssueCommentList = function(callback) {
 			getList('issues/comments', callback);
+		}
+
+		this.getCommitComments = function(callback) {
+			getList('comments', callback);
 		}
 
 		var suffix = function suffix(issue) {
@@ -192,7 +196,7 @@
 						console.log("Created comment " + pullComment.body);
 						console.log(response.body);
 					}
-					callback();
+					callback(response.error);
 				})
 		};
 
@@ -216,9 +220,36 @@
 						console.log("Created comment " + issueComment.body);
 						console.log(response.body);
 					}
-					callback();
+					callback(response.error);
 				})			
 		};
+
+		this.createCommitComment = function(commitComment, callback) {
+			var commitSha = commitComment.commit_id;
+			var url = destApiUrl + '/repos/' + destRepo + '/commits/' + commitSha + '/comments';
+			var request = rest.post(url)
+				.type('json')
+				.headers({
+					'Authorization': 'token ' + source.token,
+					'user-agent': 'node.js'						
+				})
+				.send({
+					'body':commitComment.body + suffix(commitComment),
+					'sha':commitSha,
+					'path':commitComment.path,
+					'position':commitComment.position
+				})
+				.end(function(response) {
+					if (response.error) {
+						console.log(response.error);
+					}
+					else {
+						console.log("Created comment " + commitComment.body);
+						console.log(response.body);
+					}
+					callback(response.error);
+				})				
+		}
 	};
 
 	module.exports = MigrationClient;
