@@ -6,8 +6,8 @@ var _ = require('lodash');
 
 
 var source = {
-	token: "5e23bc85f7971224035b7e4004881d14c30e5d01",
-	repo: "michaelgwelch/test",
+	token: "c342a113328ad4eac39b2b7b0f7314435315b149",
+	repo: "jci-sec/maps",
 	proxy: "http://10.10.5.18:8080"
 };
 
@@ -16,7 +16,7 @@ var dest = {
 		url: "https://c201sa26.jci.com/api/v3"
 	},
 	token: "af58f10c5bef7dbdcf812ccb2c848b2dcef5d383",
-	repo: "secui/test2",
+	repo: "secui/maps",
 	ca: require('fs').readFileSync('/Users/mgwelch/DropBox/JCI Root CA.pem')
 
 };
@@ -144,6 +144,11 @@ var migrateComments = function migrateComments(comments, callback) {
 	});
 }
 
+var verifyAllBaseCommitsExist = function(issues, callback) {
+	async.each(issues, function(issue, issueCallback) {
+		migrate.checkBaseCommit(issue, issueCallback);
+	}, callback);
+}
 
 // fetch all the data.
 async.series([
@@ -161,8 +166,9 @@ async.series([
 		} else {
 			var allIssues = mergePullsAndIssues(results[0], results[1]);
 			var allComments = mergeAndSortAllComments(results[2], results[3], results[4]);
-
+			console.log("Pulls: " + results[1].length);
 			async.series([
+				//function(stepCallback) { verifyAllBaseCommitsExist(allIssues, stepCallback); },
 				function(stepCallback) { migrateIssues(allIssues, stepCallback); },
 				function(stepCallback) { migrateComments(allComments, stepCallback); },
 				function(stepCallback) { updateIssues(allIssues, stepCallback); }

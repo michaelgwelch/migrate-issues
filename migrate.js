@@ -18,9 +18,9 @@
 			var list = [];
 
 			var getPage = function(pageNumber) {
-
+				console.log("Getting page " + pageNumber + " of " + listId);
 				var request = rest.get(sourceApiUrl + '/repos/' + sourceRepo + '/' + listId + 
-					'?page=' + pageNumber + '&state=all');
+					'?page=' + pageNumber + '&state=all&per_page=100');
 				request.headers({
 					'Authorization': 'token ' + source.token,
 					'user-agent': 'node.js'
@@ -104,17 +104,42 @@
 		var invoke = function invoke(method, url, data, callback) {
 			var request = method(url)
 				.type('json')
-				.headers(destHeaders)
-				.send(data);
+				.headers(destHeaders);
+
+			if (data) {
+				request.send(data);
+			}
 
 			request.options.ca = dest.ca;
 			request.end(function(response) {
 				if (response.error) {
 					console.log("Error making call to " + url);
+					console.log("With data: ");
+					console.dir(data);
 					console.dir(response.error);
 				}
 				callback(response.error, response);
 			});
+		}
+
+		var get = function get(url, callback) {
+			invoke(rest.get, url, null, callback);
+		}
+
+		this.checkBaseCommit = function(issue, callback) {
+			if (issue.base.sha && issue.base.sha !== 'fc81586fd3068d5c102596694469bcd334c280c9') {
+				console.log(issue.base.sha);
+
+				var url = destApiUrl + '/repos/' + destRepo + '/git/commits/' + issue.base.sha;
+				get(url, function(err,data) {
+					if (err) {
+						console.log('PROBLEM: commit ' + issue.base.sha + ' missing');
+					}
+					callback(null);
+				})
+			} else {
+				callback(null);
+			}
 		}
 
 		var patch = function patch(url, data, callback) {
@@ -148,6 +173,7 @@
 				'ref':'refs/heads/pr' + pull.number + 'base',
 				'sha':pull.base.sha
 			};
+			console.log("Create branch " + data.ref);
 			post(url, data, callback);
 		};
 
@@ -159,6 +185,7 @@
 				'head':'pr/' + pull.number + '/head',
 				'base':'pr' + pull.number + 'base'
 			};
+			console.log("Create pull " + pull.number);
 			post(url, data, callback);
 		};
 
@@ -201,7 +228,14 @@
 					'path':commitComment.path,
 					'position':commitComment.position
 				};
-			post(url, data, callback);			
+			post(url, data, function(err, result) {
+				// Most likely failure is a comment on a non-existent commit, so ignore it
+				if (err) {
+					console.log("comment on commit " + data.sha + " failed");
+					console.log("continuing");
+				}
+				callback();
+			});			
 		}
 	};
 
