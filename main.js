@@ -73,7 +73,7 @@ var migrateIssues = function migrateIssues(issues, callback) {
 	async.eachSeries(issues, function(issue, issueCallback) {
 		if (issue) {
 			if (issue.base) {
-				migrate.createPull(issue, issueCallback);
+				migrate.createBaseBranchAndPull(issue, issueCallback);
 			} else {
 				migrate.createIssue(issue, issueCallback);
 			}
@@ -92,6 +92,24 @@ var migrateIssues = function migrateIssues(issues, callback) {
 
 };
 
+var updateIssues = function updateIssues(issues, callback) {
+	async.eachSeries(issues, function(issue, issueCallback) {
+		if (issue) {
+			migrate.updateIssue(issue, issueCallback);
+		} else {
+			issueCallback();
+		}
+
+	}, function(err) {
+		if (err) {
+			console.log("Error updating issues: " + err);
+		} else {
+			console.log("updated all issues:");
+		}
+		callback(err);
+	});	
+}
+
 var migrateIssuesTask = function(issues) {
 	return function(callback) {
 		return migrateIssues(issues, callback);
@@ -106,7 +124,7 @@ var commitComment = function commitComment(comment) {
 	return comment.commit_id && !comment.pull_request_url;
 }
 
-var migrateComments = function migrateComments(comments) {
+var migrateComments = function migrateComments(comments, callback) {
 	async.eachSeries(comments, function(comment, commentCallback) {
 		if (reviewComment(comment)) {
 			migrate.createPullComment(comment, commentCallback);
@@ -117,7 +135,13 @@ var migrateComments = function migrateComments(comments) {
 			// must be issue comment (the simlest)
 			migrate.createIssueComment(comment, commentCallback);
 		}
-	})
+	}, function(err) {
+		if (err) {
+			console.log("Error creating comments");
+			console.dir(err);
+		} 
+		callback();
+	});
 }
 
 
@@ -127,17 +151,30 @@ async.series([
 	migrate.getPullList,
 	migrate.getPullCommentList,
 	migrate.getIssueCommentList,
-	migrate.getCommitComments
+	migrate.getCommitComments,
 	],
 	function(err, results) {
-		var allIssues = mergePullsAndIssues(results[0], results[1]);
-		var allComments = mergeAndSortAllComments(results[2], results[3], results[4]);
 
+		if (err) {
+			console.log("Error fetching data. Will abort");
+			console.dir(err);
+		} else {
+			var allIssues = mergePullsAndIssues(results[0], results[1]);
+			var allComments = mergeAndSortAllComments(results[2], results[3], results[4]);
 
-		console.log("Issues: " + allIssues.length);
-		migrateIssues(allIssues, function(err) {
-			migrateComments(allComments)
-		});
+			async.series([
+				function(stepCallback) { migrateIssues(allIssues, stepCallback); },
+				function(stepCallback) { migrateComments(allComments, stepCallback); },
+				function(stepCallback) { updateIssues(allIssues, stepCallback); }
+				],
+				function(err, results) {
+					if (err) {
+						console.log("Error creating data. Aborted");
+						console.dir(err);
+					}
+				});
+		}
+
 
 	});
 
