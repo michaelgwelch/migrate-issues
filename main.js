@@ -6,13 +6,19 @@ var _ = require('lodash');
 
 
 var source = {
-	token: "",
+	token: "5e23bc85f7971224035b7e4004881d14c30e5d01",
 	repo: "michaelgwelch/test",
+	proxy: "http://10.10.5.18:8080"
 };
 
 var dest = {
-	token: "",
-	repo: "michaelgwelch/test2"
+	options: {
+		url: "https://c201sa26.jci.com/api/v3"
+	},
+	token: "af58f10c5bef7dbdcf812ccb2c848b2dcef5d383",
+	repo: "secui/test2",
+	ca: require('fs').readFileSync('/Users/mgwelch/DropBox/JCI Root CA.pem')
+
 };
 
 // delete the dest repo (if it exists)
@@ -128,9 +134,7 @@ async.series([
 		var allComments = mergeAndSortAllComments(results[2], results[3], results[4]);
 
 
-
-		console.log(allIssues);
-		console.log(allComments);
+		console.log("Issues: " + allIssues.length);
 		migrateIssues(allIssues, function(err) {
 			migrateComments(allComments)
 		});

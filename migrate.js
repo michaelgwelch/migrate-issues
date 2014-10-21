@@ -7,8 +7,9 @@
 		var rest = require('unirest');
 		var sourceApiUrl = (source.options && source.options.url) || "https://api.github.com";
 		var sourceRepo = source.repo;
+		var sourceProxy = source.proxy;
 
-		var destApiUrl = (dest.option && dest.options.url) || "https://api.github.com";
+		var destApiUrl = (dest.options && dest.options.url) || "https://api.github.com";
 		var destRepo = dest.repo;
 
 		var _ = require('lodash');
@@ -24,6 +25,10 @@
 					'Authorization': 'token ' + source.token,
 					'user-agent': 'node.js'
 				});
+
+				if (source.proxy) {
+					request.proxy(sourceProxy);
+				}
 
 				request.end(function(response) {
 					if (response.error) {
@@ -93,13 +98,15 @@
 			var request = rest.patch(url)
 				.type('json')
 				.headers({
-					'Authorization': 'token ' + source.token,
+					'Authorization': 'token ' + dest.token,
 					'user-agent': 'node.js'					
 				})
 				.send({
 					'state':issueUpdate.state
-				})
-				.end(function() {
+				});
+
+			request.options.ca = dest.ca;
+			request.end(function() {
 					callback();
 				});
 		}
@@ -115,8 +122,10 @@
 				.send({
 					'title':issue.title,
 					'body':issue.body + suffix(issue)
-				})
-				.end(function(response) {
+				});
+
+			request.options.ca = dest.ca;
+			request.end(function(response) {
 					if (issue.state === 'closed') {
 						updateIssue(issue, callback);
 					} else {
@@ -133,15 +142,18 @@
 			var request = rest.post(url)
 				.type('json')
 				.headers({
-					'Authorization': 'token ' + source.token,
+					'Authorization': 'token ' + dest.token,
 					'user-agent': 'node.js'					
 				})
 				.send({
 					'ref':'refs/heads/pr' + pull.number + 'base',
 					'sha':pull.base.sha
-				})
-				.end(function(response) {
+				});
+
+			request.options.ca = dest.ca;
+			request.end(function(response) {
 					if (response.error) {
+						console.log("error pushing branch: " + url);
 						console.dir(response.error);
 						callback();
 					} else {
@@ -150,7 +162,7 @@
 						var request = rest.post(url)
 							.type('json')
 							.headers({
-								'Authorization': 'token ' + source.token,
+								'Authorization': 'token ' + dest.token,
 								'user-agent': 'node.js'					
 							})
 							.send({
@@ -158,8 +170,10 @@
 								'body':pull.body + suffix(pull),
 								'head':'pr/' + pull.number + '/head',
 								'base':'pr' + pull.number + 'base'
-							})
-							.end(function(response){
+							});
+
+						request.options.ca = dest.ca;
+						request.end(function(response){
 								if (response.error) console.log(response.error);
 								else if (pull.state === 'closed') {
 									updateIssue(pull, callback);
@@ -179,7 +193,7 @@
 			var request = rest.post(url)
 				.type('json')
 				.headers({
-					'Authorization': 'token ' + source.token,
+					'Authorization': 'token ' + dest.token,
 					'user-agent': 'node.js'						
 				})
 				.send({
@@ -187,10 +201,12 @@
 					'commit_id':pullComment['original_commit_id'],
 					'path':pullComment.path,
 					'position':pullComment['original_position']
-				})
-				.end(function(response) {
+				});
+
+			request.options.ca = dest.ca;
+			request.end(function(response) {
 					if (response.error) {
-						console.log(response.error);
+						console.dir(response);
 					}
 					else {
 						console.log("Created comment " + pullComment.body);
@@ -206,13 +222,15 @@
 			var request = rest.post(url)
 				.type('json')
 				.headers({
-					'Authorization': 'token ' + source.token,
+					'Authorization': 'token ' + dest.token,
 					'user-agent': 'node.js'						
 				})
 				.send({
 					'body':issueComment.body + suffix(issueComment),
-				})
-				.end(function(response) {
+				});
+
+			request.options.ca = dest.ca;
+			request.end(function(response) {
 					if (response.error) {
 						console.log(response.error);
 					}
@@ -230,7 +248,7 @@
 			var request = rest.post(url)
 				.type('json')
 				.headers({
-					'Authorization': 'token ' + source.token,
+					'Authorization': 'token ' + dest.token,
 					'user-agent': 'node.js'						
 				})
 				.send({
@@ -238,9 +256,12 @@
 					'sha':commitSha,
 					'path':commitComment.path,
 					'position':commitComment.position
-				})
-				.end(function(response) {
+				});
+
+			request.options.ca = dest.ca;
+			request.end(function(response) {
 					if (response.error) {
+						console.log("Error creating commit comment");
 						console.log(response.error);
 					}
 					else {
