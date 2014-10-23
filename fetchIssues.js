@@ -2,13 +2,28 @@ var rest = require('unirest');
 var fs = require('fs');
 var async = require('async');
 var _ = require('lodash');
+var cli = require('cli');
+
+cli.parse();
+
+
+//constant
+var owner = 'jci-sec'; // could be an org or a user
+
+if (!cli.args[0]) {
+	console.log('Usage: node fetchIssues.js repoName');
+	return;
+}
+var repo = cli.args[0];
 
 var source = {
 	token: "c342a113328ad4eac39b2b7b0f7314435315b149",
-	repo: "jci-sec/maps",
-	proxy: "http://10.10.5.18:8080"
+	repo: owner + '/' + repo,
+	//proxy: "http://10.10.5.18:8080"
 };
 var sourceApiUrl = (source.options && source.options.url) || "https://api.github.com";
+var sourceRepoUrl = sourceApiUrl + '/repos/' + source.repo;
+
 var sourceHeaders = {
 	'Authorization': 'token ' + source.token,
 	'user-agent': 'node.js'	
@@ -45,7 +60,7 @@ var post = function post(url, data, callback) {
 }
 
 var anchorCommit = function(commit, callback) {
-	var url = sourceApiUrl + '/repos/' + source.repo + '/git/refs';
+	var url = sourceRepoUrl + '/git/refs';
 	var data = {'ref':'refs/anchor/' + commit, 'sha':commit};
 	post(url, data, function(err) {
 		if (err) {
@@ -55,9 +70,19 @@ var anchorCommit = function(commit, callback) {
 	});
 }
 
+var issuesDirName = repo + '/issues';
+if (!fs.existsSync(repo)) { fs.mkdirSync(repo); }
+if (!fs.existsSync(issuesDirName)) { fs.mkdirSync(issuesDirName); }
+
 var getIssue = function getIssue(issueNumber, callback) {
-	var issueUrl = sourceApiUrl + '/repos/' + source.repo + '/issues/' + issueNumber;
-	var pullUrl = sourceApiUrl + '/repos/' + source.repo + '/pulls/' + issueNumber;
+	var issueUrl = sourceRepoUrl + '/issues/' + issueNumber;
+	var pullUrl = sourceRepoUrl + '/pulls/' + issueNumber;
+
+
+
+	var writeIssue = function(issue) {
+		fs.writeFileSync(issuesDirName + '/issue' + issueNumber, JSON.stringify(issue));
+	}
 
 	get(issueUrl, function(err, issue) {
 		if (err) {
@@ -73,11 +98,11 @@ var getIssue = function getIssue(issueNumber, callback) {
 						issue.base = pull.base;
 						issue.head = pull.head;
 					}
-					fs.writeFileSync('jci-sec/maps/issues/issue' + issueNumber, JSON.stringify(issue));
+					writeIssue(issue);
 					getIssue(issueNumber + 1, callback);
 				})
 			} else {
-				fs.writeFileSync('jci-sec/maps/issues/issue' + issueNumber, JSON.stringify(issue));
+				writeIssue(issue);
 				getIssue(issueNumber + 1, callback);				
 			}
 
@@ -88,7 +113,7 @@ var getIssue = function getIssue(issueNumber, callback) {
 };
 
 var getIssues = function(callback) {
-	getIssue(1, callback);
+	getIssue(570, callback);
 }
 
 var getList = function getList(listId, callback) {
@@ -96,7 +121,7 @@ var getList = function getList(listId, callback) {
 
 	var getPage = function(pageNumber) {
 		console.log("Getting page " + pageNumber + " of " + listId);
-		var request = rest.get(sourceApiUrl + '/repos/' + source.repo + '/' + listId + 
+		var request = rest.get(sourceRepoUrl + '/' + listId + 
 			'?page=' + pageNumber + '&state=all&per_page=100');
 		request.headers({
 			'Authorization': 'token ' + source.token,
@@ -109,7 +134,6 @@ var getList = function getList(listId, callback) {
 
 		request.end(function(response) {
 			if (response.error) {
-				console.dir(response);
 				callback(response.error, []);
 			} else if (response.body.length === 0) {
 				callback(null, list);
@@ -154,17 +178,17 @@ var getComments = function(callback) {
 				callback(err);
 			} else {
 				var allComments = mergeAndSortAllComments(results[0], results[1], results[2]);
-				fs.writeFileSync('maps/comments.json', JSON.stringify(allComments));
+				fs.writeFileSync(repo + '/comments.json', JSON.stringify(allComments));
 				callback(err, allComments);
 			}
 		});
 
 }
 
-var anchorComments = function(callback) {
-	var comments = JSON.parse(fs.readFileSync('maps/missingCommits.json'));
-	async.eachSeries(comments, function(comment, commentCallback) {
-		anchorCommit(comment, commentCallback)
+var anchorCommits = function(callback) {
+	var commits = JSON.parse(fs.readFileSync(repo + '/missingCommits.json'));
+	async.eachSeries(commits, function(commit, commitCallback) {
+		anchorCommit(commit, commitCallback)
 	}, function(err) {
 		callback(err);
 	})
@@ -172,7 +196,7 @@ var anchorComments = function(callback) {
 
 
 async.series([
-	anchorComments,
+	anchorCommits,
 	//getIssues,
 	//getComments, 
 	], function(err) {

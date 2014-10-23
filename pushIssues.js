@@ -4,16 +4,30 @@ var fs = require('fs');
 var _ = require('lodash');
 var async = require('async');
 var moment = require('moment');
+var cli = require('cli');
+
+cli.parse();
+
+var owner = 'secui';
+
+if(!cli.args[0]) {
+	console.log('node pushIssues.js repoName');
+	return;
+}
+
+var repo = cli.args[0];
+
 var dest = {
 	options: {
 		url: "https://c201sa26.jci.com/api/v3"
 	},
 	token: "af58f10c5bef7dbdcf812ccb2c848b2dcef5d383",
-	repo: "secui/maps",
+	repo: owner + '/' + repo,
 	ca: require('fs').readFileSync('/Users/mgwelch/DropBox/JCI Root CA.pem')
 
 };
 var destApiUrl = (dest.options && dest.options.url) || "https://api.github.com";
+var destRepoUrl = destApiUrl + '/repos/' + dest.repo;
 var destHeaders = {
 	'Authorization': 'token ' + dest.token,
 	'user-agent': 'node.js'	
@@ -39,14 +53,6 @@ var formatDate = function formatDate(date) {
 	return html;
 }
 
-var closedByString = function closedByString(issue) {
-
-	if (issue.closed_at) {
-		return 'closed by {user} on {date}'.supplary({'user':issue.user.login, 'date':issue.closed_at});
-	} else {
-		return '';
-	}
-}
 
 // avatars
 // <img alt="cwelchmi" class="avatar js-avatar" data-user="71" height="20" src="https://secure.gravatar.com/avatar/634fafebc51a88026361eb29b7d3fc21?d=https%3A%2F%2Fc201sa26.jci.com%2Fidenticons%2Fe2c420d928d4bf8ce0ff2ec19b371514.png&amp;r=x&amp;s=140" width="20">
@@ -82,8 +88,10 @@ var suffix = function suffix(issue) {
 		}
 		result = result + ' on ' + closing;
 	}
+	result = result + '\r\n\r\n';
 	return result;
 }
+
 var invoke = function invoke(method, url, data, callback) {
 	var request = method(url)
 		.type('json')
@@ -116,7 +124,7 @@ var post = function post(url, data, callback) {
 var importLabel = 'GitHub Import';
 
 var updateIssue = function(issueUpdate, callback) {
-	var url = destApiUrl + '/repos/' + dest.repo + '/issues/' + issueUpdate.number;
+	var url = destRepoUrl + '/issues/' + issueUpdate.number;
 	var data = {
 			'state':issueUpdate.state,
 			'labels': [ importLabel ]
@@ -125,7 +133,7 @@ var updateIssue = function(issueUpdate, callback) {
 }
 
 var createIssue = function(issue, callback) {
-	var url = destApiUrl + '/repos/' + dest.repo + '/issues';
+	var url = destRepoUrl + '/issues';
 	var data = {
 			'title':issue.title,
 			'body':issue.body + suffix(issue)
@@ -134,7 +142,7 @@ var createIssue = function(issue, callback) {
 };
 
 var createBranch = function createBranch(pull, callback) {
-	var url = destApiUrl + '/repos/' + dest.repo + '/git/refs';
+	var url = destRepoUrl + '/git/refs';
 	var data = {
 		'ref':'refs/heads/pr' + pull.number + 'base',
 		'sha':pull.base.sha
@@ -144,13 +152,17 @@ var createBranch = function createBranch(pull, callback) {
 };
 
 var createPull = function createBranch(pull, callback) {
-	var url = destApiUrl + '/repos/' + dest.repo + '/pulls';
+	var url = destRepoUrl + '/pulls';
 	var data = {
 		'title':pull.title,
-		'body':pull.body + suffix(pull),
+		'body':suffix(pull) + pull.body,
 		'head':'pr/' + pull.number + '/head',
 		'base':'pr' + pull.number + 'base'
 	};
+
+	if (pull.base.sha == pull.head.sha) {
+		data.head = 'refs/heads/master';
+	}
 	console.log("Create pull " + pull.number);
 	post(url, data, callback);
 };
@@ -163,14 +175,23 @@ var createBaseBranchAndPull = function createBaseBranchAndPull(pull, callback) {
 		], callback);
 };
 
-var files = fs.readdirSync('maps/issues');
-var issues = _.map(files, function(file) { return JSON.parse(fs.readFileSync('maps/issues/' + file)); });
+var issuesDir = repo + '/issues';
+var files = fs.readdirSync(issuesDir);
+var issues = _.map(files, function(file) { return JSON.parse(fs.readFileSync(issuesDir + '/' + file)); });
 issues = _.sortBy(issues, function(issue) { return issue.number; });
 
 var pushBranches = function(callback) {
 	async.eachSeries(issues, function(issue, issueCallback) {
-		console.log("branch" + issue.number);
-		createBranch(issue, issueCallback);
+		// if (issue.number < 42) {
+		// 	issueCallback()
+		// } else {
+		if (issue.base) {
+			console.log("branch" + issue.number);
+			createBranch(issue, issueCallback);
+		} else {
+			issueCallback();
+		}
+		// }
 	}, function(err) {
 		if (err) {
 			console.log(err);
@@ -181,11 +202,15 @@ var pushBranches = function(callback) {
 
 var pushIssues = function(callback) {
 	async.eachSeries(issues, function(issue, issueCallback) {
-		console.log("issue " + issue.number);
-		if (issue.pull_request) {
-			createPull(issue, issueCallback);
+		if (issue.number < 1020) {
+			issueCallback();
 		} else {
-			createIssue(issue, issueCallback);
+			console.log("issue " + issue.number);
+			if (issue.pull_request) {
+				createPull(issue, issueCallback);
+			} else {
+				createIssue(issue, issueCallback);
+			}
 		}
 	}, function(err) {
 		if (err) {
@@ -197,10 +222,12 @@ var pushIssues = function(callback) {
 
 // try to create label (it might exist, if so ignore error)
 var createLabel = function(callback) {
-	var url = destApiUrl + '/repos/' + dest.repo + '/labels';
+	var url = destRepoUrl + '/labels';
 	var data = { 'name':importLabel, 'color':'fef2c0' };
 	post(url, data, function() { callback(); });
 };
+
+createLabel(function() {});
 
 var updateIssues = function(callback) {
 	async.eachSeries(issues, function(issue, issueCallback) {
@@ -216,21 +243,28 @@ var updateIssues = function(callback) {
 
 var branches = [];
 var fetchBranches = function(callback) {
-	var url = destApiUrl + '/repos/' + dest.repo + '/git/refs?per_page=100';
-	get(url, function(err, refs) {
-		if (err) {
-			console.log(err);
-		} else {
-			branches = refs;
-		}
-		callback();
-	});
+	var getPage = function(pageNumber) {
+		console.log("getting page " + pageNumber + " of /git/refs/head");
+		var url = destRepoUrl + '/git/refs/head?per_page=100&page=' + pageNumber;
+		get(url, function(err, refs) {
+			if (err) {
+				callback(err);
+			} else {
+				branches = refs;
+				callback(null); // fetch just from head seems to return all refs not just 100.
+				//getPage(pageNumber + 1);
+
+			}
+		});
+	}
+		
+	getPage(1);
 };
 
 var branchRegEx = /pr\d+base/;
 
 var deleteBranches = function(callback) {
-	var baseurl = destApiUrl + '/repos/' + dest.repo + '/git'
+	var baseurl = destRepoUrl + '/git'
 	async.eachSeries(branches, function(refObject, branchCallback) {
 		var ref = refObject.ref;
 		if (branchRegEx.test(ref)) {
@@ -240,12 +274,10 @@ var deleteBranches = function(callback) {
 		} else {
 			branchCallback();
 		}
-	}, function(err) {
-		callback(err);
-	});
+	}, callback);
 }
 
-var baseUrl = destApiUrl + '/repos/' + dest.repo;
+var baseUrl = destRepoUrl;
 
 var urlForPullComment = function(pullComment) {
 	var pullNumber = pullComment.pull_request_url.split('/').pop();
@@ -264,6 +296,7 @@ var urlForCommitComment = function(commitComment) {
 
 var createCommitComment = function(commitComment, callback) {
 	var url = urlForCommitComment(commitComment);
+	console.log("Comment on " + commitComment.commit_id);
 	var data = {
 			'body':commitComment.body + suffix(commitComment),
 			'sha':commitComment.commit_id,
@@ -283,6 +316,7 @@ var createCommitComment = function(commitComment, callback) {
 var createCommitCommentWithLinkToPull = function(pullComment, callback) {
 	var url = urlForCommitComment(pullComment);
 	var pullNumber = pullComment.pull_request_url.split('/').pop();
+	console.log("Comment on commit " + pullComment.original_commit_id);
 	var data = {
 			'body':pullComment.body + suffix(pullComment) + ". Originated on #" + pullNumber,
 			'sha':pullComment.original_commit_id,
@@ -301,6 +335,7 @@ var createCommitCommentWithLinkToPull = function(pullComment, callback) {
 
 var createPullComment = function(pullComment, callback) {
 	var url = urlForPullComment(pullComment);
+	console.log("Comment on pull " + url);
 	var data = {
 			'body':pullComment.body + suffix(pullComment),
 			'commit_id':pullComment['original_commit_id'],
@@ -320,6 +355,7 @@ var createPullComment = function(pullComment, callback) {
 
 var createIssueComment = function(issueComment, callback) {
 	var url = urlForIssueComment(issueComment);
+	console.log("Comment on issue " + url);
 	var data = {
 			'body':issueComment.body + suffix(issueComment),
 		};
@@ -337,7 +373,7 @@ var commitComment = function commitComment(comment) {
 }
 
 var pushComments = function(callback) {
-	var comments = JSON.parse(fs.readFileSync('maps/comments.json'));
+	var comments = JSON.parse(fs.readFileSync(repo + '/comments.json'));
 	async.eachSeries(comments, function(comment, commentCallback) {
 		if (reviewComment(comment)) {
 			createPullComment(comment, commentCallback);
@@ -352,7 +388,7 @@ var pushComments = function(callback) {
 var missingCommits = [];
 var checkCommitExists = function(commit, callback) {
 
-	var url = destApiUrl + '/repos/' + dest.repo + '/git/commits/' + commit;
+	var url = destRepoUrl + '/git/commits/' + commit;
 	get(url, function(err,data) {
 		if (err) {
 			missingCommits.push(commit);
@@ -363,29 +399,45 @@ var checkCommitExists = function(commit, callback) {
 }
 
 var checkCommits = function(callback) {
-	var comments = JSON.parse(fs.readFileSync('maps/comments.json'));
-	async.eachSeries(comments, function(comment, commentCallback) {
-
-		if (reviewComment(comment)) {
-			checkCommitExists(comment.original_commit_id, commentCallback)
-		} else if (commitComment(comment)) {
-			checkCommitExists(comment.commit_id, commentCallback);
+	var comments = JSON.parse(fs.readFileSync(repo + '/comments.json'));
+	async.eachSeries(comments.concat(issues), function(item, itemCallback) {
+		if (item.base) { // this is a pull request
+			checkCommitExists(item.base.sha, itemCallback);
+		} else if (reviewComment(item)) {
+			checkCommitExists(item.original_commit_id, itemCallback);
+		} else if (commitComment(item)) {
+			checkCommitExists(item.commit_id, itemCallback);
 		} else {
-			commentCallback();
+			itemCallback();
 		}
 	}, function(err) {
-		fs.writeFileSync('maps/missingCommits.json', JSON.stringify(_.unique(missingCommits)));
+		fs.writeFileSync(repo + '/missingCommits.json', JSON.stringify(_.unique(missingCommits)));
 		callback();
-	})
+	});
 }
 
+var checkPulls = function(callback) {
+	var i;
+	for(i = 0; i < issues.length; i++) {
+		var issue = issues[i];
+		if (issue.base) {
+			if (issue.base.sha == issue.head.sha) {
+				console.log("Bad pull requests: " + issue.number);
+			}
+		}
+	}
+	callback();
+}
+
+
 async.series([
-	pushBranches,
-	pushIssues,
-	updateIssues,
-	fetchBranches,
-	deleteBranches,
-	checkCommits,
+	//pushBranches,
+	//pushIssues,
+	//updateIssues,
+	//fetchBranches,
+	//deleteBranches,
+	//checkCommits,
+	//checkPulls,
 	pushComments,
 	], function(err) {
 		console.log(err);
