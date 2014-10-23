@@ -19,7 +19,7 @@ var repo = cli.args[0];
 var source = {
 	token: "c342a113328ad4eac39b2b7b0f7314435315b149",
 	repo: owner + '/' + repo,
-	//proxy: "http://10.10.5.18:8080"
+	proxy: "http://10.10.5.18:8080"
 };
 var sourceApiUrl = (source.options && source.options.url) || "https://api.github.com";
 var sourceRepoUrl = sourceApiUrl + '/repos/' + source.repo;
@@ -113,7 +113,7 @@ var getIssue = function getIssue(issueNumber, callback) {
 };
 
 var getIssues = function(callback) {
-	getIssue(570, callback);
+	getIssue(1, callback);
 }
 
 var getList = function getList(listId, callback) {
@@ -196,9 +196,9 @@ var anchorCommits = function(callback) {
 
 
 async.series([
-	anchorCommits,
-	//getIssues,
-	//getComments, 
+	//anchorCommits,
+	getIssues,
+	getComments, 
 	], function(err) {
 		if (err) {
 			console.log('error: ' + JSON.stringify(err));

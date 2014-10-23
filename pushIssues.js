@@ -88,7 +88,6 @@ var suffix = function suffix(issue) {
 		}
 		result = result + ' on ' + closing;
 	}
-	result = result + '\r\n\r\n';
 	return result;
 }
 
@@ -155,7 +154,7 @@ var createPull = function createBranch(pull, callback) {
 	var url = destRepoUrl + '/pulls';
 	var data = {
 		'title':pull.title,
-		'body':suffix(pull) + pull.body,
+		'body':suffix(pull)  + '\r\n\r\n' + pull.body,
 		'head':'pr/' + pull.number + '/head',
 		'base':'pr' + pull.number + 'base'
 	};
@@ -202,16 +201,16 @@ var pushBranches = function(callback) {
 
 var pushIssues = function(callback) {
 	async.eachSeries(issues, function(issue, issueCallback) {
-		if (issue.number < 1020) {
-			issueCallback();
-		} else {
+		// if (issue.number < 72) {
+		// 	issueCallback();
+		// } else {
 			console.log("issue " + issue.number);
 			if (issue.pull_request) {
 				createPull(issue, issueCallback);
 			} else {
 				createIssue(issue, issueCallback);
 			}
-		}
+		// }
 	}, function(err) {
 		if (err) {
 			console.log(err);
@@ -294,6 +293,15 @@ var urlForCommitComment = function(commitComment) {
 	return baseUrl + '/commits/' + commitSha + '/comments';
 }
 
+// This is used when I want to add a review comment, but the original commit
+// is no longer part of the pull request (most likely due to a push - f)
+// So now I"m falling back to doing a commit comment and need the url
+// for the commit (using the original_commit_id)
+var urlForCommitPullComment = function(pullComment, callback) {
+	var commitSha = pullComment.original_commit_id;
+	return baseUrl + '/commits/' + commitSha + '/comments';
+}
+
 var createCommitComment = function(commitComment, callback) {
 	var url = urlForCommitComment(commitComment);
 	console.log("Comment on " + commitComment.commit_id);
@@ -314,7 +322,7 @@ var createCommitComment = function(commitComment, callback) {
 }
 
 var createCommitCommentWithLinkToPull = function(pullComment, callback) {
-	var url = urlForCommitComment(pullComment);
+	var url = urlForCommitPullComment(pullComment);
 	var pullNumber = pullComment.pull_request_url.split('/').pop();
 	console.log("Comment on commit " + pullComment.original_commit_id);
 	var data = {
@@ -431,14 +439,14 @@ var checkPulls = function(callback) {
 
 
 async.series([
-	//pushBranches,
-	//pushIssues,
-	//updateIssues,
-	//fetchBranches,
-	//deleteBranches,
+	pushBranches,
+	pushIssues,
+	pushComments,
+	updateIssues,
+	fetchBranches,
+	deleteBranches,
 	//checkCommits,
 	//checkPulls,
-	pushComments,
 	], function(err) {
 		console.log(err);
 	})
