@@ -8,7 +8,7 @@ cli.parse();
 
 
 //constant
-var owner = 'jci-sec'; // could be an org or a user
+var owner = 'you'; // could be an org or a user
 
 if (!cli.args[0]) {
 	console.log('Usage: node fetchIssues.js repoName');
@@ -17,9 +17,9 @@ if (!cli.args[0]) {
 var repo = cli.args[0];
 
 var source = {
-	token: "c342a113328ad4eac39b2b7b0f7314435315b149",
+	token: 
 	repo: owner + '/' + repo,
-	//proxy: "http://10.10.5.18:8080"
+	//proxy: 
 };
 var sourceApiUrl = (source.options && source.options.url) || "https://api.github.com";
 var sourceRepoUrl = sourceApiUrl + '/repos/' + source.repo;

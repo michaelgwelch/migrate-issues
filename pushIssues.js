@@ -8,7 +8,7 @@ var cli = require('cli');
 
 cli.parse();
 
-var owner = 'secui';
+var owner = 'you';
 
 if(!cli.args[0]) {
 	console.log('node pushIssues.js repoName');
@@ -21,9 +21,9 @@ var dest = {
 	options: {
 		url: "https://c201sa26.jci.com/api/v3"
 	},
-	token: "af58f10c5bef7dbdcf812ccb2c848b2dcef5d383",
+	token: 
 	repo: owner + '/' + repo,
-	ca: require('fs').readFileSync('/Users/mgwelch/DropBox/JCI Root CA.pem')
+	ca: require('fs').readFileSync('.pem')
 
 };
 var destApiUrl = (dest.options && dest.options.url) || "https://api.github.com";
