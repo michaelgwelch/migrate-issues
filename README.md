@@ -36,7 +36,7 @@ Move Everything Else
 6. Now go back to the first part of these steps and reclone and repush. The new clone will contain all of the newly anchored commits and they will then make it into your destination repo
 7. Now we are ready to start the creation process. Open pushIssues and comment out all tasks but createBranches and run it. This step creates a branch called pr#base for each pull request. There already exists hidden refs named pr/#/head for each pull reqeust (where in both cases # is the pull number).
 8. Now rerun with just pushIssues uncommented. This will push all of your issues up and in the case of an issue that is a pull request it will create a pull request. To create a pull request 4 pieces of info are needed: title, body, head branch, base branch. We already have all the branches created so each issue should be created successfully. Note: I did run into issues on this step (See below for what can go wrong creating a pull request).
-9. 
+9. Now that all the issues exist we can start adding comments. Note all non-pr issue comments will be created without problem. Some review comments will be for a commit that is no longer part of the pull reqeust (again this can happen if someone did a push -f after the pull was created). In this case I go ahead and put the comment on the original commit and in the body of the comment I add a #prnumber to link it back to the pull request. That way when you look at teh pull request there will be some indication taht more comments exist. Finally, any commit comment could fail if the original commit was garbage collected from the source repo already. Nothing you can do about this. A failure comment is written to stdout informing you.
 
 
 
@@ -44,3 +44,6 @@ Move Everything Else
 
 What can go wrong creating pull reqeust
 ---------
+1. Network issues, or slow server causes a timeout and the script aborts. I manually restarted and added conidtionals in pushIssues to skip all of the issues less than the next one to create. (say more)
+2. The difference between the head and base is nothing (or head and base point to same sha). Both of these scenarios could happen if after the original pull request was created someone did a ```push -f``` to either side. If there are no commits of difference between head and base the pull request will fail to be created. I have some logic in the script to just try to create a dummy PR anyway, but it doesn't always work. In particular it only handles the case where head and base are identical because it's the only thing it can detect ahead of time. If you get an abort here, manually create a dummy pull request for this pull #. Why? You need to keep pull request #'s identical as they were before since the pull # is linked automatically. You don't want links to pull #3 actually linking to the wrong pull (explain better).
+
