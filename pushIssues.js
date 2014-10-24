@@ -201,7 +201,7 @@ var pushBranches = function(callback) {
 
 var pushIssues = function(callback) {
 	async.eachSeries(issues, function(issue, issueCallback) {
-		// if (issue.number < 72) {
+		// if (issue.number < 1020) {
 		// 	issueCallback();
 		// } else {
 			console.log("issue " + issue.number);
@@ -229,7 +229,7 @@ var createLabel = function(callback) {
 createLabel(function() {});
 
 var updateIssues = function(callback) {
-	async.eachSeries(issues, function(issue, issueCallback) {
+	async.each(issues, function(issue, issueCallback) {
 		console.log("update issue " + issue.number);
 		updateIssue(issue, issueCallback);
 	}, function(err) {
@@ -264,7 +264,7 @@ var branchRegEx = /pr\d+base/;
 
 var deleteBranches = function(callback) {
 	var baseurl = destRepoUrl + '/git'
-	async.eachSeries(branches, function(refObject, branchCallback) {
+	async.each(branches, function(refObject, branchCallback) {
 		var ref = refObject.ref;
 		if (branchRegEx.test(ref)) {
 			var url = baseurl + '/' + ref;
@@ -382,7 +382,10 @@ var commitComment = function commitComment(comment) {
 
 var pushComments = function(callback) {
 	var comments = JSON.parse(fs.readFileSync(repo + '/comments.json'));
+	var commit_count = 0;
 	async.eachSeries(comments, function(comment, commentCallback) {
+		console.log("commit count: " + commit_count);
+		commit_count = commit_count + 1;
 		if (reviewComment(comment)) {
 			createPullComment(comment, commentCallback);
 		} else if (commitComment(comment)) {
@@ -439,12 +442,12 @@ var checkPulls = function(callback) {
 
 
 async.series([
-	pushBranches,
-	pushIssues,
-	pushComments,
+	//pushBranches,
+	//pushIssues,
+	//pushComments,
 	updateIssues,
-	fetchBranches,
-	deleteBranches,
+	//fetchBranches,
+	//deleteBranches,
 	//checkCommits,
 	//checkPulls,
 	], function(err) {
