@@ -1,4 +1,4 @@
-GitHub Enterprise Migration Tool
+GitHub Enterprise Migration Scripts
 ==============
 
 A tool to migrate issues and pull requests from one GitHub repo to another. I used the scripts in this repository to 
