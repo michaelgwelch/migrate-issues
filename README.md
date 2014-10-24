@@ -48,3 +48,14 @@ What can go wrong creating pull reqeust
 1. Network issues, or slow server causes a timeout and the script aborts. I manually restarted and added conidtionals in pushIssues to skip all of the issues less than the next one to create. (say more)
 2. The difference between the head and base is nothing (or head and base point to same sha). Both of these scenarios could happen if after the original pull request was created someone did a ```push -f``` to either side. If there are no commits of difference between head and base the pull request will fail to be created. I have some logic in the script to just try to create a dummy PR anyway, but it doesn't always work. In particular it only handles the case where head and base are identical because it's the only thing it can detect ahead of time. If you get an abort here, manually create a dummy pull request for this pull #. Why? You need to keep pull request #'s identical as they were before since the pull # is linked automatically. You don't want links to pull #3 actually linking to the wrong pull (explain better).
 
+What can go wrong with comments
+--------
+Network or server issues could cause the script to fail. Look at the number of the last commment to get created. Modify the script to skip all the comments up to that number and restart. (Likewise, you could modify the scripts so that they journal how much work has been succesfully completed so that on restart they pick up where they left off automatically)
+
+What can go wrong with Update Issues
+-------
+I saw that not all issues got labelled. Rerunning the script several times dooesn't hurt. I do modify it so as to not send the 'closed' state multiple times. Just comment out the state property. Then only the labelling happens.
+
+What can go wrong with deletes
+---------
+I guess it could fail like the others. rerun as many times as needed until all the pr#base branches are gone.
