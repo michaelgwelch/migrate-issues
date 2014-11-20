@@ -64,3 +64,9 @@ I guess it could fail like the others. rerun as many times as needed until all t
 Deleting/recreating destination repository
 ----------
 During the development of these scripts I had many many false starts. It was helpful to have a script to drop the destination repo and recreated it. An example script is in the bash script `resetMaps`. Note: don't check in your tokens like I did; especially since these tokens have delete access. I have long ago deleted these tokens.
+
+Hey, now it looks like one person did everything
+----------------
+This script will make it look like one user did every issue, pull, and comment. I mitigated that somewhat by including a comment on each of these saying something likek "Originally created by user" and embedded the users avatar url. 
+
+One could make this script more complicated by asking for every user for an access token. Since our primary concern during migrations was just to keep the data and know who originally did it; this met our needs.
