@@ -56,7 +56,7 @@ What can go wrong with Update Issues
 -------
 I saw that not all issues got labelled. Rerunning the script several times dooesn't hurt. I do modify it so as to not send the 'closed' state multiple times. Just comment out the state property. Then only the labelling happens.
 
-What can go wrong with deletes
+What can go wrong with Delete Branches
 ---------
 I guess it could fail like the others. rerun as many times as needed until all the pr#base branches are gone.
 
