@@ -1,9 +1,0 @@
-#!/bin/bash
-# Delete test2 repository
-curl -D deleteHeaders -H "Authorization: token 21c5ba2df7d29aa84ed9e959588de9dc5e68269b" -X DELETE https://api.github.com/repos/michaelgwelch/test2
-
-curl -D addHeaders -H "Authorization: token 21c5ba2df7d29aa84ed9e959588de9dc5e68269b" -d '{ "name":"test2" }' https://api.github.com/user/repos
-
-cd test.git
-git push https://michaelgwelch@github.com/michaelgwelch/test2.git --mirror
-cd -
