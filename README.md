@@ -59,3 +59,8 @@ I saw that not all issues got labelled. Rerunning the script several times dooes
 What can go wrong with deletes
 ---------
 I guess it could fail like the others. rerun as many times as needed until all the pr#base branches are gone.
+
+
+Resetting Destination
+----------
+During the development of these scripts I had many many false starts. It was helpful to have a script to drop the destination repo and recreated it. An example script is in the bash script `resetMaps`. Note: don't check in your tokens like I did; especially since these tokens have delete access. I have long ago deleted these tokens.
