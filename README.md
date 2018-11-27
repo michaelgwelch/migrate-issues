@@ -1,6 +1,8 @@
 GitHub Enterprise Migration Scripts
 ==============
 
+UPDATE: November 27, 2018: I'm archiving this repo. It was useful for me many years ago but I have not used it since nor do I likely ever need it again.
+
 A tool to migrate issues and pull requests from one GitHub repo to another. I used the scripts in this repository to 
 transfer all of our pull requests, issues, review comments, issues comment and commit comments frm repositories on GitHub
 to in-house GitHub Enterprise repositories.
