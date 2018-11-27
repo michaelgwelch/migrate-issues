@@ -1,15 +1,15 @@
 #!/bin/bash
 # Delete maps repository
-curl -D deleteHeaders -H "Authorization: token 50d8f42b21081d0d9790e6fe5f9875cb03edfff8" -X DELETE https://c201sa26.jci.com/api/v3/repos/secui/maps
+curl -D deleteHeaders -H "Authorization: token {yourtoken}" -X DELETE https://{yourserver}/api/v3/repos/secui/maps
 
-curl -D addHeaders -H "Authorization: token 50d8f42b21081d0d9790e6fe5f9875cb03edfff8" -d '{ "name":"maps" }' https://c201sa26.jci.com/api/v3/orgs/secui/repos
+curl -D addHeaders -H "Authorization: token {yourtoken}" -d '{ "name":"maps" }' https://{yourserver}/api/v3/orgs/secui/repos
 
 // create label
-curl -D createLabelHeaders -H "Authorization: token 50d8f42b21081d0d9790e6fe5f9875cb03edfff8" -d '{ "name":"GitHub Import","color":"fef2c0"}' https://c201sa26.jci.com/api/v3/repos/secui/maps/labels
+curl -D createLabelHeaders -H "Authorization: token {yourtoken}" -d '{ "name":"GitHub Import","color":"fef2c0"}' https://{yourserver}/api/v3/repos/secui/maps/labels
 
 
 cd maps.git
-git push git@c201sa26.jci.com:secui/maps.git --mirror
+git push git@c{yourserver}:secui/maps.git --mirror
 cd -
 
-#curl -D createCommitHeaders -H "Authorization: token 50d8f42b21081d0d9790e6fe5f9875cb03edfff8" -d '{"message":"Overide global style for h1-h3, and a to not force uppercase in maps", "tree":"37b963241d5d72d3e7be68fe3ff2828a1094a25a", "parents":"22261268a63dabd921cce04f9a5b2bc66e87d750"}' https://c201sa26.jci.com/api/v3/repos/secui/maps/git/commits 
+#curl -D createCommitHeaders -H "Authorization: token {yourtoken}" -d '{"message":"Overide global style for h1-h3, and a to not force uppercase in maps", "tree":"37b963241d5d72d3e7be68fe3ff2828a1094a25a", "parents":"22261268a63dabd921cce04f9a5b2bc66e87d750"}' https://{yourserver}/api/v3/repos/secui/maps/git/commits 
